@@ -1,3 +1,8 @@
+# Copyright 2020 Hannu Hartikainen
+# Licensed under GNU AGPL, v3 or later
+#
+# NOTE: Put art files in ans/
+
 import os.path
 from time import time, sleep
 
@@ -47,11 +52,47 @@ def render(filename, quick=False):
                 yield b'\r\n'
                 col = 0
 
-ANSI_FILE = "ans/us-birth-of-mawu-liza.ans"
+FRONT_CONTENT = """# Welcome to the ANSI art archive
+
+This site mirrors ANSI art from https://16colo.rs. Modem-like download speed is emulated, and some magic is done to render mostly correctly in modern wide unicode terminals. The originals tend to be CP437, 80 columns.
+
+For best experience, please use a streaming-capable client.
+
+## Example: the birth of mawu-liza / alpha king & h7 / blocktronics 2019-07-29
+
+=> ansi/us-birth-of-mawu-liza.ans Streaming
+=> quick/us-birth-of-mawu-liza.ans Instant display
+
+More generally, substitute /ansi/ to /quick/ if you want to show the file without modem download emulation.
+
+## List of all pieces
+
+=> list/
+
+## About this site
+
+Created one night in 2020 by Hannu Hartikainen
+=> source/ Source code
+"""
 
 @app.route("")
 def root(req):
-    return Response(Status.SUCCESS, "text/x-ansi", render(ANSI_FILE))
+    return Response(Status.SUCCESS, "text/gemini", FRONT_CONTENT)
+
+@app.route("/source")
+def source(req):
+    with open(__file__) as source_file:
+        return Response(Status.SUCCESS, "text/x-python", source_file.read())
+
+@app.route("/list")
+def files(req):
+    files = os.listdir("ans")
+    files.sort()
+    links = "\n".join(f"=> /ansi/{f}" for f in files)
+    response = f"""# {len(files)} works of art
+
+{links}"""
+    return Response(Status.SUCCESS, "text/gemini", response)
 
 @app.route("/ansi/(?P<filename>[^/]*)")
 def ansi(req, filename):
@@ -60,7 +101,7 @@ def ansi(req, filename):
         return Response(Status.SUCCESS, "text/x-ansi", render(path))
     return Response(Status.NOT_FOUND, "Not found")
 
-@app.route("/quick/(?P<filename>[^/]*")
+@app.route("/quick/(?P<filename>[^/]*)")
 def quick(req, filename):
     path = os.path.join("ans", filename)
     if os.path.isfile(path):
@@ -68,5 +109,5 @@ def quick(req, filename):
     return Response(Status.NOT_FOUND, "Not found")
 
 if __name__ == "__main__":
-    server = GeminiServer(app)
+    server = GeminiServer(app, port=2020, host="0.0.0.0")
     server.run()
