@@ -98,7 +98,8 @@ def files(req):
     links = "\n".join(f"=> /{f}" for f in files)
     response = f"""# {len(files)} works of art
 
-{links}"""
+{links}
+"""
     return Response(Status.SUCCESS, "text/gemini", response)
 
 @app.route("/(?P<filename>[^/]*\.ans)")
