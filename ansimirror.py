@@ -74,10 +74,16 @@ For best experience, please use a streaming-capable client. If not, add /quick/ 
 => /us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
 => /ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
 => /us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
+=> /ungenannt_1453.ans 1453 / ungenannt / blocktronics 2016
+=> /LU-TL_DR.ans TL;DR / luciano ayres / blocktronics 2015
+=> /LU-GLITCH.ans Glitch (8-bit) / luciano ayres / blocktronics 2015
+=> /ungenannt_motherofsorrows.ans mother of sorrows / ungenannt / blocktronics 2014
+=> /2m-history.ans history / mattmatthew / blocktronics 2013
 
-## List of all pieces
+## List of all (50K+) pieces
 
 => list/
+Recommendation: browse https://16colo.rs/, then use direct links when you know the filename...
 
 ## About this site
 
