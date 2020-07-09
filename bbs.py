@@ -13,15 +13,15 @@ app = JetforceApplication()
 def render(filename, quick=False):
     with open(filename, "rb") as file:
         col = 0
+        linebuf = b""
         ansiseq = ""
-        nextbyte_ts = time()
-        byte_interval = 10 / 19200
+        nextline_ts = time()
+        line_interval = (80 * (1 + 8 + 1)) / 19200
         while True:
-            nextbyte_ts += byte_interval
             b = file.read(1)
             if len(b) == 0:
                 # EOF
-                return ''
+                return linebuf
 
             if b[0] == 27:
                 # skip ANSI sequences from line length calculation
@@ -32,25 +32,32 @@ def render(filename, quick=False):
                 if b == b'C': # move right; an optimization technique
                     move = int(ansiseq[2:-1] or 1)
                     col += move
-                    nextbyte_ts += (move - 1) * byte_interval
-                yield ansiseq
+                    nextline_ts += (move - 1) * line_interval
+                linebuf += ansiseq
                 continue
 
             col += 1
 
             if not quick:
-                sleeptime = nextbyte_ts - time()
+                sleeptime = nextline_ts - time()
                 if sleeptime > 0:
                     sleep(sleeptime)
 
-            yield b.decode("cp437").encode("utf-8")
+            linebuf += b.decode("cp437").encode("utf-8")
 
-            if b in (b'\r', b'\n'):
+            if b == b'\r':
                 col = 0
+            if b == b'\n':
+                yield linebuf
+                nextline_ts += line_interval
+                col = 0
+                linebuf = b""
             if col >= 80:
                 # Wrap to 80 cols
-                yield b'\r\n'
+                yield linebuf + b'\r\n'
+                nextline_ts += line_interval
                 col = 0
+                linebuf = b""
 
 FRONT_CONTENT = """# Welcome to the ANSI art archive
 
