@@ -116,5 +116,5 @@ def quick(req, filename):
     return Response(Status.NOT_FOUND, "Not found")
 
 if __name__ == "__main__":
-    server = GeminiServer(app, port=2020, host="0.0.0.0", hostname="ansi.hrtk.in")
+    server = GeminiServer(app, port=2020)
     server.run()
