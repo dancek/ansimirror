@@ -32,7 +32,6 @@ def render(filename, quick=False):
                 if b == b'C': # move right; an optimization technique
                     move = int(ansiseq[2:-1] or 1)
                     col += move
-                    nextline_ts += (move - 1) * line_interval
                 linebuf += ansiseq
                 continue
 
