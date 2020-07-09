@@ -1,14 +1,19 @@
 # Copyright 2020 Hannu Hartikainen
 # Licensed under GNU AGPL, v3 or later
 #
-# NOTE: Put art files in ans/
+# NOTE: Get art files with `rsync -a rsync://16colo.rs/pack pack`
 
+import os
 import os.path
 from time import time, sleep
 
 from jetforce import GeminiServer, JetforceApplication, Response, Status
 
 app = JetforceApplication()
+filename_to_path = {}
+for root, dirs, files in os.walk("pack"):
+    for f in files:
+        filename_to_path[f] = os.path.join(root, f)
 
 def render(filename, quick=False):
     with open(filename, "rb") as file:
@@ -62,14 +67,13 @@ FRONT_CONTENT = """# Welcome to the ANSI art archive
 
 This site mirrors ANSI art from https://16colo.rs. Modem-like download speed is emulated, and some magic is done to render mostly correctly in modern wide unicode terminals. The originals tend to be CP437, 80 columns.
 
-For best experience, please use a streaming-capable client.
+For best experience, please use a streaming-capable client. If not, add /quick/ in front of urls to skip the modem download emulation.
 
-## Example: the birth of mawu-liza / alpha king & h7 / blocktronics 2019-07-29
+## Picks from the curator
 
-=> /us-birth-of-mawu-liza.ans Streaming
-=> /quick/us-birth-of-mawu-liza.ans Instant display
-
-More generally, substitute /ansi/ to /quick/ if you want to show the file without modem download emulation.
+=> /us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
+=> /ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
+=> /us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
 
 ## List of all pieces
 
@@ -77,43 +81,41 @@ More generally, substitute /ansi/ to /quick/ if you want to show the file withou
 
 ## About this site
 
-Created one night in 2020 by Hannu Hartikainen
-=> source/ Source code
+=> source/ Source code (AGPLv3)
+=> gemini://hannuhartikainen.fi/ Copyright 2020 by Hannu Hartikainen
 """
 
 @app.route("")
 def root(req):
     return Response(Status.SUCCESS, "text/gemini", FRONT_CONTENT)
 
-@app.route("/source")
-def source(req):
-    with open(__file__) as source_file:
-        return Response(Status.SUCCESS, "text/x-python", source_file.read())
-
-@app.route("/list")
-def files(req):
-    files = os.listdir("ans")
-    files.sort()
-    links = "\n".join(f"=> /{f}" for f in files)
-    response = f"""# {len(files)} works of art
-
-{links}
-"""
-    return Response(Status.SUCCESS, "text/gemini", response)
-
-@app.route("/(?P<filename>[^/]*\.ans)")
+@app.route("/(?P<filename>[^/]*)")
 def ansi(req, filename):
-    path = os.path.join("ans", filename)
-    if os.path.isfile(path):
+    if filename in filename_to_path:
+        path = filename_to_path[filename]
         return Response(Status.SUCCESS, "text/x-ansi", render(path))
     return Response(Status.NOT_FOUND, "Not found")
 
 @app.route("/quick/(?P<filename>[^/]*)")
 def quick(req, filename):
-    path = os.path.join("ans", filename)
-    if os.path.isfile(path):
+    if filename in filename_to_path:
+        path = filename_to_path[filename]
         return Response(Status.SUCCESS, "text/x-ansi", b"".join(render(path, quick=True)))
     return Response(Status.NOT_FOUND, "Not found")
+
+@app.route("/list")
+def files(req):
+    links = "\n".join(f"=> /{filename} {path[5:]}" for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]))
+    response = f"""# {len(filename_to_path)} works of art
+
+{links}
+"""
+    return Response(Status.SUCCESS, "text/gemini", response)
+
+@app.route("/source")
+def source(req):
+    with open(__file__) as source_file:
+        return Response(Status.SUCCESS, "text/x-python", source_file.read())
 
 if __name__ == "__main__":
     server = GeminiServer(app, port=2020)
