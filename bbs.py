@@ -67,8 +67,8 @@ For best experience, please use a streaming-capable client.
 
 ## Example: the birth of mawu-liza / alpha king & h7 / blocktronics 2019-07-29
 
-=> ansi/us-birth-of-mawu-liza.ans Streaming
-=> quick/us-birth-of-mawu-liza.ans Instant display
+=> /us-birth-of-mawu-liza.ans Streaming
+=> /quick/us-birth-of-mawu-liza.ans Instant display
 
 More generally, substitute /ansi/ to /quick/ if you want to show the file without modem download emulation.
 
@@ -95,13 +95,13 @@ def source(req):
 def files(req):
     files = os.listdir("ans")
     files.sort()
-    links = "\n".join(f"=> /ansi/{f}" for f in files)
+    links = "\n".join(f"=> /{f}" for f in files)
     response = f"""# {len(files)} works of art
 
 {links}"""
     return Response(Status.SUCCESS, "text/gemini", response)
 
-@app.route("/ansi/(?P<filename>[^/]*)")
+@app.route("/(?P<filename>[^/]*\.ans)")
 def ansi(req, filename):
     path = os.path.join("ans", filename)
     if os.path.isfile(path):
