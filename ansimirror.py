@@ -128,6 +128,12 @@ def source(req):
     with open(__file__) as source_file:
         return Response(Status.SUCCESS, "text/x-python", source_file.read())
 
+@app.route("/robots.txt")
+def robots(req):
+    return Response(Status.SUCCESS, "text/plain", """User-agent: *
+Disallow: /
+""")
+
 if __name__ == "__main__":
     server = GeminiServer(app, port=2020)
     server.run()
