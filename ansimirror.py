@@ -7,6 +7,9 @@ import os
 import os.path
 from time import time, sleep
 
+from twisted.internet import reactor
+from twisted.internet.task import deferLater
+
 from jetforce import GeminiServer, JetforceApplication, Response, Status
 
 app = JetforceApplication()
@@ -42,23 +45,24 @@ def render(filename, quick=False):
 
             col += 1
 
-            if not quick:
-                sleeptime = nextline_ts - time()
-                if sleeptime > 0:
-                    sleep(sleeptime)
+            if quick:
+                sleeptime = 0
+            else:
+                sleeptime = max(nextline_ts - time(), 0)
 
             linebuf += b.decode("cp437").encode("utf-8")
 
             if b == b'\r':
+                yield deferLater(reactor, sleeptime, lambda: b'')
                 col = 0
             if b == b'\n':
-                yield linebuf
+                yield deferLater(reactor, sleeptime, lambda: linebuf)
                 nextline_ts += line_interval
                 col = 0
                 linebuf = b""
             if col >= 80:
                 # Wrap to 80 cols
-                yield linebuf + b'\r\n'
+                yield deferLater(reactor, sleeptime, lambda: linebuf + b'\r\n')
                 nextline_ts += line_interval
                 col = 0
                 linebuf = b""
@@ -107,17 +111,17 @@ def ansi(req, filename):
 def quick(req, filename):
     if filename in filename_to_path:
         path = filename_to_path[filename]
-        return Response(Status.SUCCESS, "text/x-ansi", b"".join(render(path, quick=True)))
+        return Response(Status.SUCCESS, "text/x-ansi", render(path, quick=True))
     return Response(Status.NOT_FOUND, "Not found")
 
 @app.route("/list")
 def files(req):
-    links = "\n".join(f"=> /{filename} {path[5:]}" for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]))
-    response = f"""# {len(filename_to_path)} works of art
+    def link_generator():
+        yield f"# {len(filename_to_path)} works of art\r\n\r\n"
+        for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]):
+            yield f"=> /{filename} {path[5:]}\r\n"
 
-{links}
-"""
-    return Response(Status.SUCCESS, "text/gemini", response)
+    return Response(Status.SUCCESS, "text/gemini", link_generator())
 
 @app.route("/source")
 def source(req):
