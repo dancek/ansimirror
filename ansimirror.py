@@ -8,11 +8,15 @@ import os.path
 from time import time, sleep
 
 from twisted.internet import reactor
+from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.task import deferLater
+from twisted.web.server import Site
 
 from jetforce import GeminiServer, JetforceApplication, Response, Status
 
-app = JetforceApplication()
+from http_application import HackyHttpApplication
+
+
 filename_to_path = {}
 for root, dirs, files in os.walk("pack"):
     for f in files:
@@ -24,7 +28,7 @@ def render(filename, quick=False):
         linebuf = b""
         ansiseq = ""
         nextline_ts = time()
-        line_interval = (80 * (1 + 8 + 1)) / 19200
+        line_interval = (80 * (1 + 8 + 1)) / 9600
         while True:
             b = file.read(1)
             if len(b) == 0:
@@ -96,44 +100,74 @@ Recommendation: browse https://16colo.rs/, then use direct links when you know t
 => gemini://hannuhartikainen.fi/ Copyright 2020 by Hannu Hartikainen
 """
 
-@app.route("")
-def root(req):
-    return Response(Status.SUCCESS, "text/gemini", FRONT_CONTENT)
 
-@app.route("/(?P<filename>[^/]*)")
-def ansi(req, filename):
+gemini_app = JetforceApplication()
+http_app = HackyHttpApplication()
+
+def route(path, mimetype, http_path=None):
+    """Route for both Gemini and HTTP"""
+    def wrap(fn):
+        @gemini_app.route(path)
+        def gemini_route(req, *args, **kwargs):
+            content = fn(*args, **kwargs)
+            if content is None:
+                return Response(Status.NOT_FOUND, "Not found")
+            return Response(Status.SUCCESS, mimetype, content)
+
+        @http_app.route(http_path or path)
+        def http_route(req, *args, **kwargs):
+            content = fn(*args, **kwargs)
+            if content is None:
+                req.setResponseCode(404)
+                return "Not found"
+            req.setHeader("Content-Type", mimetype)
+            return content
+
+        return fn
+
+    return wrap
+
+
+@route("", "text/gemini")
+def front():
+    return FRONT_CONTENT
+
+@route("/(?P<filename>[^/]*)", "text/x-ansi")
+def ansi(filename):
     if filename in filename_to_path:
         path = filename_to_path[filename]
-        return Response(Status.SUCCESS, "text/x-ansi", render(path))
-    return Response(Status.NOT_FOUND, "Not found")
+        return render(path)
+    return None
 
-@app.route("/quick/(?P<filename>[^/]*)")
-def quick(req, filename):
+@route("/quick/(?P<filename>[^/]*)", "text/x-ansi")
+def quick(filename):
     if filename in filename_to_path:
         path = filename_to_path[filename]
-        return Response(Status.SUCCESS, "text/x-ansi", render(path, quick=True))
-    return Response(Status.NOT_FOUND, "Not found")
+        return render(path, quick=True)
+    return None
 
-@app.route("/list")
-def files(req):
+@route("/list", "text/gemini")
+def file_list():
     def link_generator():
         yield f"# {len(filename_to_path)} works of art\r\n\r\n"
         for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]):
             yield f"=> /{filename} {path[5:]}\r\n"
 
-    return Response(Status.SUCCESS, "text/gemini", link_generator())
+    return link_generator()
 
-@app.route("/source")
-def source(req):
+@route("/source", "text/x-python")
+def source():
     with open(__file__) as source_file:
-        return Response(Status.SUCCESS, "text/x-python", source_file.read())
+        return source_file.read()
 
-@app.route("/robots.txt")
-def robots(req):
-    return Response(Status.SUCCESS, "text/plain", """User-agent: *
-Disallow: /
-""")
+@route("/robots.txt", "text/plain")
+def robots():
+    return "User-agent: *\nDisallow: /\n"
+
 
 if __name__ == "__main__":
-    server = GeminiServer(app, port=2020)
-    server.run()
+    http_endpoint = TCP4ServerEndpoint(reactor=reactor, port=2080)
+    http_endpoint.listen(http_app)
+
+    gemini_server = GeminiServer(gemini_app, reactor=reactor, port=2020)
+    gemini_server.run()
