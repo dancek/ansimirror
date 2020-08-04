@@ -3,6 +3,43 @@
 #
 # NOTE: Get art files with `rsync -a rsync://16colo.rs/pack pack`
 
+FRONT_CONTENT = """gemini://ansi.hrtk.in/ – http://ansi.hrtk.in/
+
+# Welcome to the ANSI art archive
+
+This site mirrors ANSI art from https://16colo.rs. Modem-like download speed is emulated, and some magic is done to render mostly correctly in modern wide unicode terminals. The originals tend to be CP437, 80 columns.
+
+The mirror is Gemini first, but a naive HTTP mirror is also available for the unenlightened. For best experience, please use a streaming-capable client. To bypass modem emulation, add /quick/ in front of the URL.
+
+## Usage examples
+
+gemget -o- gemini://ansi.hrtk.in/us-birth-of-mawu-liza.ans
+amfora gemini://ansi.hrtk.in/quick/us-birth-of-mawu-liza.ans
+curl http://ansi.hrtk.in/us-birth-of-mawu-liza.ans
+
+## Picks from the curator
+
+=> /us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
+=> /ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
+=> /us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
+=> /ungenannt_1453.ans 1453 / ungenannt / blocktronics 2016
+=> /LU-TL_DR.ans TL;DR / luciano ayres / blocktronics 2015
+=> /LU-GLITCH.ans Glitch (8-bit) / luciano ayres / blocktronics 2015
+=> /ungenannt_motherofsorrows.ans mother of sorrows / ungenannt / blocktronics 2014
+=> /bym-motherf4.ans motherf4 / bym / blocktronics 2014
+=> /2m-history.ans history / mattmatthew / blocktronics 2013
+
+## List of all (50K+) pieces
+
+=> list/
+Recommendation: browse https://16colo.rs/, then use direct links when you know the filename...
+
+## About this site
+
+=> source/ Source code (AGPLv3)
+=> gemini://hannuhartikainen.fi/ Copyright 2020 by Hannu Hartikainen
+"""
+
 import os
 import os.path
 from time import time, sleep
@@ -22,7 +59,7 @@ for root, dirs, files in os.walk("pack"):
     for f in files:
         filename_to_path[f] = os.path.join(root, f)
 
-def render(filename, quick=False):
+def render_ansi(filename, quick=False):
     with open(filename, "rb") as file:
         col = 0
         linebuf = b""
@@ -71,35 +108,6 @@ def render(filename, quick=False):
                 col = 0
                 linebuf = b""
 
-FRONT_CONTENT = """# Welcome to the ANSI art archive
-
-This site mirrors ANSI art from https://16colo.rs. Modem-like download speed is emulated, and some magic is done to render mostly correctly in modern wide unicode terminals. The originals tend to be CP437, 80 columns.
-
-For best experience, please use a streaming-capable client. If not, add /quick/ in front of urls to skip the modem download emulation.
-
-## Picks from the curator
-
-=> /us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
-=> /ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
-=> /us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
-=> /ungenannt_1453.ans 1453 / ungenannt / blocktronics 2016
-=> /LU-TL_DR.ans TL;DR / luciano ayres / blocktronics 2015
-=> /LU-GLITCH.ans Glitch (8-bit) / luciano ayres / blocktronics 2015
-=> /ungenannt_motherofsorrows.ans mother of sorrows / ungenannt / blocktronics 2014
-=> /bym-motherf4.ans motherf4 / bym / blocktronics 2014
-=> /2m-history.ans history / mattmatthew / blocktronics 2013
-
-## List of all (50K+) pieces
-
-=> list/
-Recommendation: browse https://16colo.rs/, then use direct links when you know the filename...
-
-## About this site
-
-=> source/ Source code (AGPLv3)
-=> gemini://hannuhartikainen.fi/ Copyright 2020 by Hannu Hartikainen
-"""
-
 
 gemini_app = JetforceApplication()
 http_app = HackyHttpApplication()
@@ -136,14 +144,14 @@ def front():
 def ansi(filename):
     if filename in filename_to_path:
         path = filename_to_path[filename]
-        return render(path)
+        return render_ansi(path)
     return None
 
 @route("/quick/(?P<filename>[^/]*)", "text/x-ansi")
 def quick(filename):
     if filename in filename_to_path:
         path = filename_to_path[filename]
-        return render(path, quick=True)
+        return render_ansi(path, quick=True)
     return None
 
 @route("/list", "text/gemini")
