@@ -13,21 +13,25 @@ The mirror is Gemini first, but a naive HTTP mirror is also available for the un
 
 ## Usage examples
 
+```
 gemget -o- gemini://ansi.hrtk.in/us-birth-of-mawu-liza.ans
 amfora gemini://ansi.hrtk.in/quick/us-birth-of-mawu-liza.ans
 curl http://ansi.hrtk.in/us-birth-of-mawu-liza.ans
+```
 
 ## Picks from the curator
 
-=> /us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
-=> /ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
-=> /us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
-=> /ungenannt_1453.ans 1453 / ungenannt / blocktronics 2016
-=> /LU-TL_DR.ans TL;DR / luciano ayres / blocktronics 2015
-=> /LU-GLITCH.ans Glitch (8-bit) / luciano ayres / blocktronics 2015
-=> /ungenannt_motherofsorrows.ans mother of sorrows / ungenannt / blocktronics 2014
-=> /bym-motherf4.ans motherf4 / bym / blocktronics 2014
-=> /2m-history.ans history / mattmatthew / blocktronics 2013
+=> /quick/us-birth-of-mawu-liza.ans the birth of mawu-liza / alpha king & h7 / blocktronics 2019
+=> /quick/ungenannt-darkness.ans darkness / ungenannt / blocktronics 2019
+=> /quick/us-plague-doctor.ans plague doctor / whazzit ober alpha king tainted x avenging angel / blocktronics 2020
+=> /quick/ungenannt_1453.ans 1453 / ungenannt / blocktronics 2016
+=> /quick/LU-TL_DR.ans TL;DR / luciano ayres / blocktronics 2015
+=> /quick/LU-GLITCH.ans Glitch (8-bit) / luciano ayres / blocktronics 2015
+=> /quick/ungenannt_motherofsorrows.ans mother of sorrows / ungenannt / blocktronics 2014
+=> /quick/bym-motherf4.ans motherf4 / bym / blocktronics 2014
+=> /quick/2m-history.ans history / mattmatthew / blocktronics 2013
+
+For modem emulation, remove /quick from the URL!
 
 ## List of all (50K+) pieces
 
@@ -157,9 +161,13 @@ def quick(filename):
 @route("/list", "text/gemini")
 def file_list():
     def link_generator():
-        yield f"# {len(filename_to_path)} works of art\r\n\r\n"
+        yield f"""# {len(filename_to_path)} works of art
+
+Note that I stopped linking to the pieces because a misbehaving bot was crawling all of them. Just use /<filename> for modem emulation or /quick/<filename> to download. If you ever write gemini crawlers, please respect robots.txt and crawl slowly!
+
+"""
         for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]):
-            yield f"=> /{filename} {path[5:]}\r\n"
+            yield f"* {filename}\n"
 
     return link_generator()
 
