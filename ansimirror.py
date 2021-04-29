@@ -204,7 +204,7 @@ def file_list():
 Note that I stopped linking to the pieces because a misbehaving bot was crawling all of them. Just use /<filename> for modem emulation or /quick/<filename> to download. If you ever write gemini crawlers, please respect robots.txt and crawl slowly!
 
 """
-        for filename, path in sorted(filename_to_path.items(), key=lambda kv: kv[1]):
+        for filename in sorted(filename_to_path.keys()):
             yield f"* {filename}\n"
 
     return link_generator()
